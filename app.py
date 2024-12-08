@@ -92,4 +92,4 @@ if st.sidebar.button("Predict"):
 
 # Footer
 st.markdown("---")
-st.markdown("Built with ❤️ using [Streamlit](https://streamlit.io) | 🌦️ Rainfall Prediction App")
+st.markdown("🌦️ Rainfall Prediction App")
