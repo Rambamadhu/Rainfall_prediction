@@ -12,7 +12,7 @@ feature_names = model_data["feature_names"]
 # Set the app title and layout
 st.set_page_config(page_title="Rainfall Prediction App", page_icon="🌧️", layout="wide")
 
-# HTML and CSS for raindrop background animation
+# HTML and CSS for dynamic falling raindrops
 rain_animation = """
 <style>
 body {
@@ -23,33 +23,37 @@ body {
 }
 
 #rain-container {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    overflow: hidden;
     z-index: -1;
+    pointer-events: none;
 }
 
 .raindrop {
     position: absolute;
-    top: -10px;
     width: 2px;
-    height: 30px;
+    height: 10px;
     background: rgba(255, 255, 255, 0.6);
+    opacity: 0.7;
     animation: fall 2s infinite;
     animation-timing-function: linear;
 }
 
 @keyframes fall {
+    from {
+        transform: translateY(-10vh);
+    }
     to {
         transform: translateY(100vh);
     }
 }
-
 </style>
+
 <div id="rain-container"></div>
+
 <script>
 const rainContainer = document.getElementById('rain-container');
 
@@ -57,15 +61,16 @@ function createRaindrop() {
     const raindrop = document.createElement('div');
     raindrop.classList.add('raindrop');
     raindrop.style.left = Math.random() * window.innerWidth + 'px';
-    raindrop.style.animationDuration = Math.random() * 2 + 2 + 's';
+    raindrop.style.animationDuration = Math.random() * 2 + 1.5 + 's';
+    raindrop.style.opacity = Math.random() * 0.5 + 0.5;
     rainContainer.appendChild(raindrop);
 
     setTimeout(() => {
         rainContainer.removeChild(raindrop);
-    }, 4000);
+    }, 2000);
 }
 
-setInterval(createRaindrop, 100);
+setInterval(createRaindrop, 50);
 </script>
 """
 
