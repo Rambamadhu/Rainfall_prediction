@@ -9,111 +9,116 @@ with open("rainfall_prediction_model.pkl", "rb") as file:
 model = model_data["model"]
 feature_names = model_data["feature_names"]
 
-# Set the app title and layout
-st.set_page_config(page_title="Rainfall Prediction App", page_icon="🌧️", layout="wide")
-
-# HTML and CSS for dynamic falling raindrops
+# Custom CSS and JavaScript for falling rain animation
 rain_animation = """
 <style>
 body {
     margin: 0;
-    padding: 0;
-    background: linear-gradient(to bottom, #1e3c72, #2a5298);
     overflow: hidden;
+    background: linear-gradient(to bottom, #2c3e50, #2980b9);
 }
 
-#rain-container {
-    position: fixed;
+#rain-canvas {
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     z-index: -1;
-    pointer-events: none;
-}
-
-.raindrop {
-    position: absolute;
-    width: 2px;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.6);
-    opacity: 0.7;
-    animation: fall 2s infinite;
-    animation-timing-function: linear;
-}
-
-@keyframes fall {
-    from {
-        transform: translateY(-10vh);
-    }
-    to {
-        transform: translateY(100vh);
-    }
 }
 </style>
-
-<div id="rain-container"></div>
-
+<canvas id="rain-canvas"></canvas>
 <script>
-const rainContainer = document.getElementById('rain-container');
+const canvas = document.getElementById("rain-canvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let raindrops = [];
 
 function createRaindrop() {
-    const raindrop = document.createElement('div');
-    raindrop.classList.add('raindrop');
-    raindrop.style.left = Math.random() * window.innerWidth + 'px';
-    raindrop.style.animationDuration = Math.random() * 2 + 1.5 + 's';
-    raindrop.style.opacity = Math.random() * 0.5 + 0.5;
-    rainContainer.appendChild(raindrop);
-
-    setTimeout(() => {
-        rainContainer.removeChild(raindrop);
-    }, 2000);
+    return {
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        speed: Math.random() * 5 + 2,
+        length: Math.random() * 20 + 10,
+    };
 }
 
-setInterval(createRaindrop, 50);
+function updateRaindrops() {
+    raindrops.forEach((drop) => {
+        drop.y += drop.speed;
+        if (drop.y > canvas.height) {
+            drop.y = -drop.length;
+            drop.x = Math.random() * canvas.width;
+        }
+    });
+}
+
+function drawRaindrops() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.lineWidth = 1.5;
+    raindrops.forEach((drop) => {
+        ctx.beginPath();
+        ctx.moveTo(drop.x, drop.y);
+        ctx.lineTo(drop.x, drop.y + drop.length);
+        ctx.stroke();
+    });
+}
+
+function loop() {
+    updateRaindrops();
+    drawRaindrops();
+    requestAnimationFrame(loop);
+}
+
+for (let i = 0; i < 500; i++) {
+    raindrops.push(createRaindrop());
+}
+
+loop();
+
+window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
 </script>
 """
 
-# Add the rain animation to the app
-st.markdown(rain_animation, unsafe_allow_html=True)
+# Streamlit App UI
+st.set_page_config(page_title="Rainfall Prediction", layout="wide")
 
-# App header
-st.title("🌦️ Rainfall Prediction Application")
-st.markdown("""
-Welcome to the **Rainfall Prediction App**!  
-Enter the weather details below, and the app will predict whether it will rain or not 🌧️☀️.
-""")
+st.markdown(
+    """
+    <h1 style="color: white; text-align: center;">🌦️ Rainfall Prediction Application</h1>
+    <p style="color: white; text-align: center;">
+    Enter the weather details below, and we'll predict whether it will rain!
+    </p>
+    """,
+    unsafe_allow_html=True,
+)
 
-# Input form
-st.header("Enter Weather Details")
-with st.form("weather_form"):
-    pressure = st.number_input("Pressure (hPa)", min_value=900.0, max_value=1100.0, step=0.1, value=1015.9)
-    dewpoint = st.number_input("Dew Point (°C)", min_value=0.0, max_value=30.0, step=0.1, value=19.9)
-    humidity = st.number_input("Humidity (%)", min_value=0, max_value=100, step=1, value=95)
-    cloud = st.number_input("Cloud Cover (%)", min_value=0, max_value=100, step=1, value=81)
-    sunshine = st.number_input("Sunshine Duration (hours)", min_value=0.0, max_value=15.0, step=0.1, value=0.0)
-    winddirection = st.number_input("Wind Direction (degrees)", min_value=0.0, max_value=360.0, step=0.1, value=40.0)
-    windspeed = st.number_input("Wind Speed (km/h)", min_value=0.0, max_value=50.0, step=0.1, value=13.7)
-    
-    # Submit button
-    submitted = st.form_submit_button("Predict")
+# Input fields
+st.sidebar.header("Enter Weather Details")
+inputs = {}
+for feature in feature_names:
+    inputs[feature] = st.sidebar.number_input(f"Enter {feature}", value=0.0)
 
-# Prediction
-if submitted:
-    # Create input DataFrame
-    input_data = pd.DataFrame([[pressure, dewpoint, humidity, cloud, sunshine, winddirection, windspeed]],
-                              columns=feature_names)
-    # Make prediction
-    prediction = model.predict(input_data)
-    result = "Rainfall" if prediction[0] == 1 else "No Rainfall"
+# Make prediction
+input_df = pd.DataFrame([inputs.values()], columns=feature_names)
+prediction = model.predict(input_df)[0]
 
-    # Display prediction result
-    st.subheader("Prediction Result:")
-    if prediction[0] == 1:
-        st.success("🌧️ It is likely to Rain!")
-    else:
-        st.info("☀️ No Rainfall expected.")
-
-# Footer
-st.markdown("---")
-st.markdown("Built with ❤️ using [Streamlit](https://streamlit.io) | 🌦️ Rainfall Prediction App")
+# Display result and animation if rainfall
+if prediction == 1:
+    st.markdown(
+        "<h2 style='color: white; text-align: center;'>🌧️ It is likely to Rain!</h2>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(rain_animation, unsafe_allow_html=True)
+else:
+    st.markdown(
+        "<h2 style='color: white; text-align: center;'>☀️ No Rainfall expected.</h2>",
+        unsafe_allow_html=True,
+    )
