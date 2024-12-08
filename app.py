@@ -90,6 +90,3 @@ if st.sidebar.button("Predict"):
     else:
         st.info("☀️ No Rainfall expected.")
 
-# Footer
-st.markdown("---")
-st.markdown("🌦️ Rainfall Prediction App")
